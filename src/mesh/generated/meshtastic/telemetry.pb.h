@@ -91,7 +91,9 @@ typedef enum _meshtastic_TelemetrySensorType {
     /* MAX17261 lipo battery gauge */
     meshtastic_TelemetrySensorType_MAX17261 = 38,
     /* PCT2075 Temperature Sensor */
-    meshtastic_TelemetrySensorType_PCT2075 = 39
+    meshtastic_TelemetrySensorType_PCT2075 = 39,
+    /* Omron D7S Earthquake Sensor*/
+    meshtastic_TelemetrySensorType_D7S = 40
 } meshtastic_TelemetrySensorType;
 
 /* Struct definitions */
@@ -184,6 +186,15 @@ typedef struct _meshtastic_EnvironmentMetrics {
     /* Soil temperature measured (*C) */
     bool has_soil_temperature;
     float soil_temperature;
+    /* Earthquake SI Value 1/10th in m/s */
+    bool has_si_value;
+    float si_value;
+    /* Earthquake PGA(Peak Ground Acceleration) 10*value in m/s^2 */
+    bool has_pga_value;
+    float pga_value;
+    /* Earthquake Collapse Flag*/
+    bool has_collapse_flag;
+    uint8_t collapse_flag;
 } meshtastic_EnvironmentMetrics;
 
 /* Power Metrics (voltage / current / etc) */
@@ -356,8 +367,8 @@ extern "C" {
 
 /* Helper constants for enums */
 #define _meshtastic_TelemetrySensorType_MIN meshtastic_TelemetrySensorType_SENSOR_UNSET
-#define _meshtastic_TelemetrySensorType_MAX meshtastic_TelemetrySensorType_PCT2075
-#define _meshtastic_TelemetrySensorType_ARRAYSIZE ((meshtastic_TelemetrySensorType)(meshtastic_TelemetrySensorType_PCT2075+1))
+#define _meshtastic_TelemetrySensorType_MAX meshtastic_TelemetrySensorType_D7S
+#define _meshtastic_TelemetrySensorType_ARRAYSIZE ((meshtastic_TelemetrySensorType)(meshtastic_TelemetrySensorType_D7S+1))
 
 
 
@@ -371,7 +382,7 @@ extern "C" {
 
 /* Initializer values for message structs */
 #define meshtastic_DeviceMetrics_init_default    {false, 0, false, 0, false, 0, false, 0, false, 0}
-#define meshtastic_EnvironmentMetrics_init_default {false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0}
+#define meshtastic_EnvironmentMetrics_init_default {false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0}
 #define meshtastic_PowerMetrics_init_default     {false, 0, false, 0, false, 0, false, 0, false, 0, false, 0}
 #define meshtastic_AirQualityMetrics_init_default {false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0}
 #define meshtastic_LocalStats_init_default       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -417,6 +428,9 @@ extern "C" {
 #define meshtastic_EnvironmentMetrics_rainfall_24h_tag 20
 #define meshtastic_EnvironmentMetrics_soil_moisture_tag 21
 #define meshtastic_EnvironmentMetrics_soil_temperature_tag 22
+#define meshtastic_EnvironmentMetrics_si_value_tag 23
+#define meshtastic_EnvironmentMetrics_pga_value_tag 24
+#define meshtastic_EnvironmentMetrics_collapse_flag_tag 25
 #define meshtastic_PowerMetrics_ch1_voltage_tag  1
 #define meshtastic_PowerMetrics_ch1_current_tag  2
 #define meshtastic_PowerMetrics_ch2_voltage_tag  3
@@ -502,7 +516,10 @@ X(a, STATIC,   OPTIONAL, FLOAT,    radiation,        18) \
 X(a, STATIC,   OPTIONAL, FLOAT,    rainfall_1h,      19) \
 X(a, STATIC,   OPTIONAL, FLOAT,    rainfall_24h,     20) \
 X(a, STATIC,   OPTIONAL, UINT32,   soil_moisture,    21) \
-X(a, STATIC,   OPTIONAL, FLOAT,    soil_temperature,  22)
+X(a, STATIC,   OPTIONAL, FLOAT,    soil_temperature,  22) \
+X(a, STATIC,   OPTIONAL, FLOAT,    si_value,  23) \
+X(a, STATIC,   OPTIONAL, FLOAT,    pga_value,  24) \
+X(a, STATIC,   OPTIONAL, UINT32,    collapse_flag,  25)
 #define meshtastic_EnvironmentMetrics_CALLBACK NULL
 #define meshtastic_EnvironmentMetrics_DEFAULT NULL
 
@@ -618,7 +635,7 @@ extern const pb_msgdesc_t meshtastic_Nau7802Config_msg;
 #define MESHTASTIC_MESHTASTIC_TELEMETRY_PB_H_MAX_SIZE meshtastic_Telemetry_size
 #define meshtastic_AirQualityMetrics_size        78
 #define meshtastic_DeviceMetrics_size            27
-#define meshtastic_EnvironmentMetrics_size       113
+#define meshtastic_EnvironmentMetrics_size       125
 #define meshtastic_HealthMetrics_size            11
 #define meshtastic_HostMetrics_size              264
 #define meshtastic_LocalStats_size               60

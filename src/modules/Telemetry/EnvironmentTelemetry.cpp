@@ -173,7 +173,8 @@ IndicatorSensor indicatorSensor;
 
 #include "graphics/ScreenFonts.h"
 #include <Throttle.h>
-
+#include "Sensor/RAK12027_D7S.h"
+RAK_D7S rak_d7s;
 int32_t EnvironmentTelemetryModule::runOnce()
 {
     if (sleepOnNextExecution == true) {
@@ -190,9 +191,9 @@ int32_t EnvironmentTelemetryModule::runOnce()
         without having to configure it from the PythonAPI or WebUI.
     */
 
-    // moduleConfig.telemetry.environment_measurement_enabled = 1;
+    moduleConfig.telemetry.environment_measurement_enabled = 1;
     // moduleConfig.telemetry.environment_screen_enabled = 1;
-    // moduleConfig.telemetry.environment_update_interval = 15;
+    moduleConfig.telemetry.environment_update_interval = 30;
 
     if (!(moduleConfig.telemetry.environment_measurement_enabled || moduleConfig.telemetry.environment_screen_enabled ||
           ENVIRONMENTAL_TELEMETRY_MODULE_ENABLE)) {
@@ -264,6 +265,9 @@ int32_t EnvironmentTelemetryModule::runOnce()
                 result = max17048Sensor.runOnce();
             if (cgRadSens.hasSensor())
                 result = cgRadSens.runOnce();
+            if (1)
+                LOG_INFO("rakd7s runonce");
+                result = rak_d7s.runOnce();
                 // this only works on the wismesh hub with the solar option. This is not an I2C sensor, so we don't need the
                 // sensormap here.
 #ifdef HAS_RAKPROT
@@ -387,6 +391,18 @@ void EnvironmentTelemetryModule::drawFrame(OLEDDisplay *display, OLEDDisplayUiSt
         sensorData[sensorCount++] = "W_Lux: " + String(lastMeasurement.variant.environment_metrics.white_lux, 2) + "lx";
     }
 
+    if (lastMeasurement.variant.environment_metrics.si_value != 0) {
+        sensorData[sensorCount++] = "SI Value: " + String(lastMeasurement.variant.environment_metrics.si_value, 2) + "m/s";
+    }
+
+     if (lastMeasurement.variant.environment_metrics.pga_value != 0) {
+        sensorData[sensorCount++] = "PGA Value: " + String(lastMeasurement.variant.environment_metrics.pga_value, 2) + "m/s^2";
+    }
+
+     if (lastMeasurement.variant.environment_metrics.collapse_flag != 0) {
+        sensorData[sensorCount++] = "Collapse Flag: " + String(lastMeasurement.variant.environment_metrics.collapse_flag, 0) + "flag";
+    }
+
     static int scrollOffset = 0;
     static bool scrollingDown = true;
     static uint32_t lastScrollTime = millis();
@@ -449,6 +465,9 @@ bool EnvironmentTelemetryModule::handleReceivedProtobuf(const meshtastic_MeshPac
                  t->variant.environment_metrics.weight);
 
         LOG_INFO("(Received from %s): radiation=%fµR/h", sender, t->variant.environment_metrics.radiation);
+
+        LOG_INFO("(Received from %s): SI=%fm/s, PGA=%fm/s^2, collapse_flag=%d", sender, t->variant.environment_metrics.si_value,
+                t->variant.environment_metrics.pga_value, t->variant.environment_metrics.collapse_flag);
 
 #endif
         // release previous packet before occupying a new spot
@@ -595,6 +614,10 @@ bool EnvironmentTelemetryModule::getEnvironmentTelemetry(meshtastic_Telemetry *m
         valid = valid && cgRadSens.getMetrics(m);
         hasSensor = true;
     }
+    if (1) {
+        valid = valid && rak_d7s.getMetrics(m);
+        hasSensor = true;
+    }
 #ifdef HAS_RAKPROT
     valid = valid && rak9154Sensor.getMetrics(m);
     hasSensor = true;
@@ -652,7 +675,9 @@ bool EnvironmentTelemetryModule::sendTelemetry(NodeNum dest, bool phoneOnly)
                  m.variant.environment_metrics.wind_direction, m.variant.environment_metrics.weight);
 
         LOG_INFO("Send: radiation=%fµR/h", m.variant.environment_metrics.radiation);
-
+        
+        LOG_INFO("Send: SI=%fm/s, PGA=%fm/s^2, collapse_flag=%d", m.variant.environment_metrics.si_value,
+                m.variant.environment_metrics.pga_value, m.variant.environment_metrics.collapse_flag);
         sensor_read_error_count = 0;
 
         meshtastic_MeshPacket *p = allocDataProtobuf(m);
@@ -816,6 +841,11 @@ AdminMessageHandleResult EnvironmentTelemetryModule::handleAdminMessageForModule
     }
     if (cgRadSens.hasSensor()) {
         result = cgRadSens.handleAdminMessage(mp, request, response);
+        if (result != AdminMessageHandleResult::NOT_HANDLED)
+            return result;
+    }
+    if (1) {
+        result = rak_d7s.handleAdminMessage(mp, request, response);
         if (result != AdminMessageHandleResult::NOT_HANDLED)
             return result;
     }
